@@ -3,11 +3,13 @@ import axios from 'axios';
 import './App.css';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
+import KanbanBoard from './components/KanbanBoard';
 import Whiteboard from './components/Whiteboard';
 import SearchBar from './components/SearchBar';
 import TaskStats from './components/TaskStats';
 
 type Priority = 'low' | 'medium' | 'high';
+type Status = 'todo' | 'in-progress' | 'done';
 
 interface Task {
   id: string;
@@ -16,11 +18,12 @@ interface Task {
   completed: boolean;
   priority: Priority;
   dueDate: string | null;
+  status: Status;
   createdAt: string;
 }
 
 const App: React.FC = () => {
-  const [activeView, setActiveView] = useState<'tasks' | 'whiteboard'>('tasks');
+  const [activeView, setActiveView] = useState<'tasks' | 'kanban' | 'whiteboard'>('tasks');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,21 +129,28 @@ const App: React.FC = () => {
         <p>Stay organized and brainstorm together in real time</p>
       </header>
 
-      <main className="app-main">
+      <main className={`app-main ${activeView === 'kanban' ? 'app-main-wide' : ''}`}>
         <div className="view-switcher">
           <button
             type="button"
             className={`view-tab ${activeView === 'tasks' ? 'active' : ''}`}
             onClick={() => setActiveView('tasks')}
           >
-            Tasks
+            📋 List
+          </button>
+          <button
+            type="button"
+            className={`view-tab ${activeView === 'kanban' ? 'active' : ''}`}
+            onClick={() => setActiveView('kanban')}
+          >
+            📌 Kanban
           </button>
           <button
             type="button"
             className={`view-tab ${activeView === 'whiteboard' ? 'active' : ''}`}
             onClick={() => setActiveView('whiteboard')}
           >
-            Live Whiteboard
+            🧠 Whiteboard
           </button>
         </div>
 
@@ -159,6 +169,20 @@ const App: React.FC = () => {
                 onDeleteTask={deleteTask}
                 onToggleCompletion={toggleTaskCompletion}
                 onEditTask={editTask}
+              />
+            )}
+          </>
+        ) : activeView === 'kanban' ? (
+          <>
+            <TaskForm onAddTask={addTask} />
+            <TaskStats tasks={tasks} />
+            {loading ? (
+              <p className="loading">Loading tasks...</p>
+            ) : (
+              <KanbanBoard
+                tasks={filteredTasks()}
+                onEditTask={editTask}
+                onDeleteTask={deleteTask}
               />
             )}
           </>

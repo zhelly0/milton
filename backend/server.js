@@ -65,9 +65,11 @@ function saveWhiteboard() {
 }
 
 // ── Load persisted state ─────────────────────────────────────────────
+const validStatuses = ['todo', 'in-progress', 'done'];
+
 const defaultTasks = [
-  { id: uuidv4(), title: 'Learn Express', description: 'Study Express.js fundamentals', completed: false, priority: 'medium', dueDate: null, createdAt: new Date().toISOString() },
-  { id: uuidv4(), title: 'Build API', description: 'Create REST API endpoints', completed: false, priority: 'high', dueDate: null, createdAt: new Date().toISOString() }
+  { id: uuidv4(), title: 'Learn Express', description: 'Study Express.js fundamentals', completed: false, priority: 'medium', dueDate: null, status: 'todo', createdAt: new Date().toISOString() },
+  { id: uuidv4(), title: 'Build API', description: 'Create REST API endpoints', completed: false, priority: 'high', dueDate: null, status: 'todo', createdAt: new Date().toISOString() }
 ];
 
 let tasks = loadJSON(TASKS_FILE, defaultTasks);
@@ -117,7 +119,7 @@ app.get('/api/tasks/:id', (req, res) => {
 
 // POST a new task
 app.post('/api/tasks', (req, res) => {
-  const { title, description, priority, dueDate } = req.body;
+  const { title, description, priority, dueDate, status } = req.body;
 
   if (!title) {
     return res.status(400).json({ error: 'Title is required' });
@@ -132,6 +134,7 @@ app.post('/api/tasks', (req, res) => {
     completed: false,
     priority: validPriorities.includes(priority) ? priority : 'medium',
     dueDate: dueDate || null,
+    status: validStatuses.includes(status) ? status : 'todo',
     createdAt: new Date().toISOString()
   };
 
@@ -156,6 +159,11 @@ app.put('/api/tasks/:id', (req, res) => {
     if (validPriorities.includes(req.body.priority)) task.priority = req.body.priority;
   }
   if (req.body.dueDate !== undefined) task.dueDate = req.body.dueDate;
+  if (req.body.status !== undefined) {
+    if (validStatuses.includes(req.body.status)) task.status = req.body.status;
+    // Sync completed flag with status
+    task.completed = req.body.status === 'done';
+  }
 
   saveTasks();
   res.json(task);

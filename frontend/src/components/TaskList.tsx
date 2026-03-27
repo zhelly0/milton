@@ -2,6 +2,7 @@ import React from 'react';
 import TaskItem from './TaskItem';
 
 type Priority = 'low' | 'medium' | 'high';
+type Status = 'todo' | 'in-progress' | 'done';
 
 interface Task {
   id: string;
@@ -10,6 +11,7 @@ interface Task {
   completed: boolean;
   priority: Priority;
   dueDate: string | null;
+  status: Status;
   createdAt: string;
 }
 
