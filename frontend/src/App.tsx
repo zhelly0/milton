@@ -16,7 +16,8 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = 'http://localhost:5000/api/tasks';
+  // Use relative API routing so local dev (CRA proxy) and Azure SWA both work.
+  const API_URL = '/api/tasks';
 
   // Fetch all tasks on component mount
   useEffect(() => {
