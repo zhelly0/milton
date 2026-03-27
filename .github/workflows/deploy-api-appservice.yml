@@ -40,12 +40,13 @@ jobs:
           cd backend
           zip -r ../backend.zip .
 
-      - name: Configure App Service settings
+      - name: Configure and deploy to Azure Web App
         run: |
           az webapp config set \
             --name "${{ vars.AZURE_WEBAPP_NAME }}" \
             --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
             --startup-file "node server.js"
+
           az webapp config appsettings set \
             --name "${{ vars.AZURE_WEBAPP_NAME }}" \
             --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
@@ -53,8 +54,6 @@ jobs:
               WEBSITE_RUN_FROM_PACKAGE=0 \
               SCM_DO_BUILD_DURING_DEPLOYMENT=false
 
-      - name: Deploy to Azure Web App
-        run: |
           az webapp deploy \
             --name "${{ vars.AZURE_WEBAPP_NAME }}" \
             --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
