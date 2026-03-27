@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
+import SubtaskList from './SubtaskList';
 
 type Priority = 'low' | 'medium' | 'high';
 type Status = 'todo' | 'in-progress' | 'done';
+
+interface Subtask {
+  id: string;
+  text: string;
+  done: boolean;
+}
 
 interface Task {
   id: string;
@@ -11,6 +18,8 @@ interface Task {
   priority: Priority;
   dueDate: string | null;
   status: Status;
+  tags: string[];
+  subtasks: Subtask[];
   createdAt: string;
 }
 
@@ -19,6 +28,8 @@ interface TaskItemProps {
   onDelete: (id: string) => void;
   onToggleCompletion: (id: string) => void;
   onEdit: (id: string, updates: Partial<Task>) => void;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 const priorityLabels: Record<Priority, string> = {
@@ -27,12 +38,24 @@ const priorityLabels: Record<Priority, string> = {
   high: '🔴 High',
 };
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, onDelete, onToggleCompletion, onEdit }) => {
+function getDueStatus(dueDate: string | null, completed: boolean): 'overdue' | 'due-soon' | 'ok' | null {
+  if (!dueDate || completed) return null;
+  const now = new Date();
+  const due = new Date(dueDate);
+  const diffMs = due.getTime() - now.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  if (diffHours < 0) return 'overdue';
+  if (diffHours < 24) return 'due-soon';
+  return 'ok';
+}
+
+const TaskItem: React.FC<TaskItemProps> = ({ task, onDelete, onToggleCompletion, onEdit, isSelected, onToggleSelect }) => {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDesc, setEditDesc] = useState(task.description);
+  const [showSubtasks, setShowSubtasks] = useState(false);
 
-  const isOverdue = task.dueDate && !task.completed && new Date(task.dueDate) < new Date();
+  const dueStatus = getDueStatus(task.dueDate, task.completed);
 
   const handleSave = () => {
     if (!editTitle.trim()) return;
@@ -46,9 +69,25 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onDelete, onToggleCompletion,
     setEditing(false);
   };
 
+  const handleSubtaskUpdate = (subtasks: Subtask[]) => {
+    onEdit(task.id, { subtasks });
+  };
+
+  const subtasksDone = (task.subtasks || []).filter(s => s.done).length;
+  const subtasksTotal = (task.subtasks || []).length;
+
   return (
-    <div className={`task-item ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''} priority-${task.priority}`}>
+    <div className={`task-item ${task.completed ? 'completed' : ''} ${dueStatus === 'overdue' ? 'overdue' : ''} ${dueStatus === 'due-soon' ? 'due-soon-highlight' : ''} priority-${task.priority}`}>
       <div className="task-checkbox-container">
+        {onToggleSelect && (
+          <input
+            type="checkbox"
+            checked={isSelected || false}
+            onChange={() => onToggleSelect(task.id)}
+            className="task-select-checkbox"
+            aria-label={`Select "${task.title}"`}
+          />
+        )}
         <input
           type="checkbox"
           checked={task.completed}
@@ -86,13 +125,44 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onDelete, onToggleCompletion,
                 {priorityLabels[task.priority]}
               </span>
               {task.dueDate && (
-                <span className={`due-date ${isOverdue ? 'overdue' : ''}`}>
+                <span className={`due-date ${dueStatus === 'overdue' ? 'overdue' : ''} ${dueStatus === 'due-soon' ? 'due-soon' : ''}`}>
+                  {dueStatus === 'overdue' && '⚠️ '}
+                  {dueStatus === 'due-soon' && '⏰ '}
                   📅 {new Date(task.dueDate).toLocaleDateString()}
+                  {dueStatus === 'due-soon' && <span className="due-soon-label"> Due soon!</span>}
                 </span>
               )}
             </div>
             <h3 className="task-title">{task.title}</h3>
             {task.description && <p className="task-description">{task.description}</p>}
+
+            {/* Tags */}
+            {task.tags && task.tags.length > 0 && (
+              <div className="task-tags">
+                {task.tags.map(tag => (
+                  <span key={tag} className="task-tag">{tag}</span>
+                ))}
+              </div>
+            )}
+
+            {/* Subtasks toggle */}
+            <div className="task-subtask-toggle">
+              <button
+                type="button"
+                className="subtask-toggle-btn"
+                onClick={() => setShowSubtasks(!showSubtasks)}
+              >
+                {showSubtasks ? '▾' : '▸'} Subtasks
+                {subtasksTotal > 0 && <span className="subtask-badge">{subtasksDone}/{subtasksTotal}</span>}
+              </button>
+            </div>
+
+            {showSubtasks && (
+              <SubtaskList
+                subtasks={task.subtasks || []}
+                onUpdate={handleSubtaskUpdate}
+              />
+            )}
           </>
         )}
       </div>

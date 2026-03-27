@@ -68,8 +68,8 @@ function saveWhiteboard() {
 const validStatuses = ['todo', 'in-progress', 'done'];
 
 const defaultTasks = [
-  { id: uuidv4(), title: 'Learn Express', description: 'Study Express.js fundamentals', completed: false, priority: 'medium', dueDate: null, status: 'todo', createdAt: new Date().toISOString() },
-  { id: uuidv4(), title: 'Build API', description: 'Create REST API endpoints', completed: false, priority: 'high', dueDate: null, status: 'todo', createdAt: new Date().toISOString() }
+  { id: uuidv4(), title: 'Learn Express', description: 'Study Express.js fundamentals', completed: false, priority: 'medium', dueDate: null, status: 'todo', tags: ['learning'], subtasks: [], createdAt: new Date().toISOString() },
+  { id: uuidv4(), title: 'Build API', description: 'Create REST API endpoints', completed: false, priority: 'high', dueDate: null, status: 'todo', tags: ['feature', 'urgent'], subtasks: [], createdAt: new Date().toISOString() }
 ];
 
 let tasks = loadJSON(TASKS_FILE, defaultTasks);
@@ -108,6 +108,35 @@ app.get('/api/tasks', (req, res) => {
   res.json(result);
 });
 
+// GET export tasks as JSON (must come before :id route)
+app.get('/api/tasks/export', (req, res) => {
+  const format = req.query.format || 'json';
+
+  if (format === 'csv') {
+    const header = 'id,title,description,completed,priority,dueDate,status,tags,createdAt';
+    const rows = tasks.map(t => {
+      const escape = (s) => `"${String(s || '').replace(/"/g, '""')}"`;
+      return [
+        t.id,
+        escape(t.title),
+        escape(t.description),
+        t.completed,
+        t.priority,
+        t.dueDate || '',
+        t.status,
+        escape((t.tags || []).join('; ')),
+        t.createdAt
+      ].join(',');
+    });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=tasks.csv');
+    return res.send([header, ...rows].join('\n'));
+  }
+
+  res.setHeader('Content-Disposition', 'attachment; filename=tasks.json');
+  res.json(tasks);
+});
+
 // GET a single task by ID
 app.get('/api/tasks/:id', (req, res) => {
   const task = tasks.find(t => t.id === req.params.id);
@@ -119,7 +148,7 @@ app.get('/api/tasks/:id', (req, res) => {
 
 // POST a new task
 app.post('/api/tasks', (req, res) => {
-  const { title, description, priority, dueDate, status } = req.body;
+  const { title, description, priority, dueDate, status, tags, subtasks } = req.body;
 
   if (!title) {
     return res.status(400).json({ error: 'Title is required' });
@@ -135,12 +164,62 @@ app.post('/api/tasks', (req, res) => {
     priority: validPriorities.includes(priority) ? priority : 'medium',
     dueDate: dueDate || null,
     status: validStatuses.includes(status) ? status : 'todo',
+    tags: Array.isArray(tags) ? tags : [],
+    subtasks: Array.isArray(subtasks) ? subtasks.map(s => ({ id: uuidv4(), text: s.text || s, done: false })) : [],
     createdAt: new Date().toISOString()
   };
 
   tasks.push(newTask);
   saveTasks();
   res.status(201).json(newTask);
+});
+
+// PATCH bulk update tasks
+app.patch('/api/tasks/bulk', (req, res) => {
+  const { ids, updates } = req.body;
+  if (!Array.isArray(ids) || !updates) {
+    return res.status(400).json({ error: 'ids (array) and updates (object) are required' });
+  }
+
+  const updated = [];
+  ids.forEach(id => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    if (updates.completed !== undefined) task.completed = updates.completed;
+    if (updates.status !== undefined && validStatuses.includes(updates.status)) {
+      task.status = updates.status;
+      task.completed = updates.status === 'done';
+    }
+    if (updates.priority !== undefined) {
+      const validPriorities = ['low', 'medium', 'high'];
+      if (validPriorities.includes(updates.priority)) task.priority = updates.priority;
+    }
+    if (updates.tags !== undefined && Array.isArray(updates.tags)) task.tags = updates.tags;
+    updated.push(task);
+  });
+
+  saveTasks();
+  res.json(updated);
+});
+
+// DELETE bulk delete tasks
+app.post('/api/tasks/bulk-delete', (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) {
+    return res.status(400).json({ error: 'ids (array) is required' });
+  }
+
+  const deleted = [];
+  ids.forEach(id => {
+    const index = tasks.findIndex(t => t.id === id);
+    if (index !== -1) {
+      deleted.push(tasks.splice(index, 1)[0]);
+    }
+  });
+
+  saveTasks();
+  res.json(deleted);
 });
 
 // PUT update a task (mark as completed or update details)
@@ -164,6 +243,8 @@ app.put('/api/tasks/:id', (req, res) => {
     // Sync completed flag with status
     task.completed = req.body.status === 'done';
   }
+  if (req.body.tags !== undefined) task.tags = Array.isArray(req.body.tags) ? req.body.tags : [];
+  if (req.body.subtasks !== undefined) task.subtasks = req.body.subtasks;
 
   saveTasks();
   res.json(task);

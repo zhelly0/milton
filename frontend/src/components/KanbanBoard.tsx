@@ -3,6 +3,12 @@ import React, { useState, DragEvent } from 'react';
 type Priority = 'low' | 'medium' | 'high';
 type Status = 'todo' | 'in-progress' | 'done';
 
+interface Subtask {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -11,6 +17,8 @@ interface Task {
   priority: Priority;
   dueDate: string | null;
   status: Status;
+  tags: string[];
+  subtasks: Subtask[];
   createdAt: string;
 }
 
@@ -117,6 +125,20 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onEditTask, onDeleteTa
                     <h4 className="kanban-card-title">{task.title}</h4>
                     {task.description && (
                       <p className="kanban-card-desc">{task.description}</p>
+                    )}
+                    {task.tags && task.tags.length > 0 && (
+                      <div className="kanban-card-tags">
+                        {task.tags.map(tag => (
+                          <span key={tag} className="task-tag task-tag-sm">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    {task.subtasks && task.subtasks.length > 0 && (
+                      <div className="kanban-card-subtasks">
+                        <span className="kanban-subtask-indicator">
+                          ☑ {task.subtasks.filter((s: any) => s.done).length}/{task.subtasks.length}
+                        </span>
+                      </div>
                     )}
                     <button
                       type="button"
