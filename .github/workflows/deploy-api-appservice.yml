@@ -26,9 +26,21 @@ jobs:
       - name: Install backend dependencies
         run: npm ci --omit=dev --prefix backend
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: backend
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Package backend
+        run: |
+          cd backend
+          zip -r ../backend.zip .
+
+      - name: Deploy to Azure Web App
+        run: |
+          az webapp deploy \
+            --name "${{ vars.AZURE_WEBAPP_NAME }}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --src-path backend.zip \
+            --type zip \
+            --restart true
