@@ -52,69 +52,77 @@ flowchart TD
 	appsvc -.-> note2
 	swa -.-> note3
 ```
-# Task Manager (React + Express)
+# System Architecture
 
-## Architecture
-- Frontend: React (in `frontend`)
-- Backend API: Express (in `backend`)
+```mermaid
+flowchart TD
+	subgraph Dev
+		frontend[React TypeScript App]
+		backend[Express API Server]
+	end
 
-This repository is prepared for Azure Option 1 deployment:
-- Azure Static Web Apps hosts the frontend
-- Azure App Service hosts the backend API
-- Static Web Apps links to the App Service backend through `/api/*`
+	subgraph GitHub
+		repo[GitHub Repository]
+		gha_front[GitHub Actions Frontend Workflow]
+		gha_back[GitHub Actions Backend Workflow]
+	end
 
-## Local Development
+	subgraph Azure
+		swa[Azure Static Web App]
+		appsvc[Azure App Service API]
+		rg[Resource Group]
+		plan[App Service Plan]
+	end
 
-### Backend
-```bash
-npm --prefix backend install
-npm --prefix backend run dev
+	user[User Browser]
+
+	%% Dev to GitHub
+	frontend --> repo
+	backend --> repo
+
+	%% GitHub Actions
+	repo --> gha_front
+	repo --> gha_back
+
+	%% Deployments
+	gha_front --> swa
+	gha_back --> appsvc
+
+	%% Azure infra
+	swa -. part of .-> rg
+	appsvc -. part of .-> rg
+	appsvc -. uses .-> plan
+
+	%% User flow
+	user -- HTTPS GET/POST --> swa
+	swa -- API Proxy /api/* --> appsvc
+
+	%% Notes
+	note1[Frontend build output deployed to SWA]
+	note2[Backend Node API deployed to App Service]
+	note3[Static Web App proxies API calls to App Service]
+
+	swa -.-> note1
+	appsvc -.-> note2
+	swa -.-> note3
 ```
+# Introduction 
+TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
 
-### Frontend
-```bash
-npm --prefix frontend install
-npm --prefix frontend start
-```
+# Getting Started
+TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
+1.	Installation process
+2.	Software dependencies
+3.	Latest releases
+4.	API references
 
-The frontend now uses relative API routes (`/api/tasks`) so it works both:
-- Locally via CRA proxy
-- In Azure Static Web Apps when backend is linked
+# Build and Test
+TODO: Describe and show how to build your code and run the tests. 
 
-## Azure Deployment (Option 1)
+# Contribute
+TODO: Explain how other users and developers can contribute to make your code better. 
 
-Deployment plan details are in `.azure/plan.md`.
-
-### Prerequisites
-- Azure subscription: `746887ba-7b8a-4ef3-bc07-9f06372b0806`
-- Resource group: `rg-test-taskmanager`
-- Region: `swedencentral`
-- Naming prefix: `milton-taskmgr`
-
-### GitHub Actions Workflows
-- Frontend SWA deploy: `.github/workflows/deploy-static-web-app.yml`
-- Backend App Service deploy: `.github/workflows/deploy-api-appservice.yml`
-
-### Required GitHub Secrets and Variables
-
-1. `AZURE_STATIC_WEB_APPS_API_TOKEN`
-- Token from your Static Web App deployment settings
-
-2. `AZURE_WEBAPP_PUBLISH_PROFILE`
-- Publish profile from your App Service (API)
-
-3. Repository variable `AZURE_WEBAPP_NAME`
-- Set to your API web app name (for example `milton-taskmgr-api`)
-
-### Azure Resource Provisioning (recommended names)
-- Static Web App: `milton-taskmgr-swa`
-- App Service Plan: `milton-taskmgr-plan`
-- Web App API: `milton-taskmgr-api`
-
-### Link Static Web App to App Service Backend
-After both resources exist and first deployments complete, link backend in Azure Portal:
-1. Open your Static Web App
-2. Go to **Backends**
-3. Link your App Service API
-
-Once linked, requests to `/api/*` from the frontend route to your App Service API.
+If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
+- [ASP.NET Core](https://github.com/aspnet/Home)
+- [Visual Studio Code](https://github.com/Microsoft/vscode)
+- [Chakra Core](https://github.com/Microsoft/ChakraCore)
