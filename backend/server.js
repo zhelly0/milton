@@ -11,13 +11,22 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 // ── Persistence helpers ──────────────────────────────────────────────
-const DATA_DIR = path.join(__dirname, 'data');
+// On Azure App Service, __dirname is read-only (zip deploy).
+// Use DATA_PATH env var or fall back to /home/data (Azure writable) or ./data (local).
+const DATA_DIR = process.env.DATA_PATH
+  || (process.env.WEBSITE_INSTANCE_ID ? '/home/data' : path.join(__dirname, 'data'));
 const TASKS_FILE = path.join(DATA_DIR, 'tasks.json');
 const WHITEBOARD_FILE = path.join(DATA_DIR, 'whiteboard.json');
 
 // Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  console.log(`Data directory: ${DATA_DIR}`);
+} catch (err) {
+  console.warn(`Could not create data directory at ${DATA_DIR}:`, err.message);
+  console.warn('State persistence will be disabled for this session.');
 }
 
 function loadJSON(filePath, fallback) {
@@ -202,3 +211,14 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
   console.log(`Task Manager API running on http://localhost:${PORT}`);
 });
+
+// Flush pending saves on shutdown
+function flushAndExit(signal) {
+  console.log(`${signal} received – flushing data...`);
+  Object.values(saveTimers).forEach(t => clearTimeout(t));
+  saveJSON(TASKS_FILE, tasks);
+  saveJSON(WHITEBOARD_FILE, whiteboardStrokes);
+  process.exit(0);
+}
+process.on('SIGTERM', () => flushAndExit('SIGTERM'));
+process.on('SIGINT', () => flushAndExit('SIGINT'));
