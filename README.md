@@ -1,128 +1,55 @@
+
 # System Architecture
 
 ```mermaid
 flowchart TD
-	subgraph Dev
-		frontend[React TypeScript App]
-		backend[Express API Server]
-	end
+    subgraph Dev
+        frontend[React TypeScript App]
+        backend[Express API Server]
+    end
 
-	subgraph GitHub
-		repo[GitHub Repository]
-		gha_front[GitHub Actions Frontend Workflow]
-		gha_back[GitHub Actions Backend Workflow]
-	end
+    subgraph GitHub
+        repo[GitHub Repository]
+        gha_front[GitHub Actions Frontend Workflow]
+        gha_back[GitHub Actions Backend Workflow]
+    end
 
-	subgraph Azure
-		swa[Azure Static Web App]
-		appsvc[Azure App Service API]
-		rg[Resource Group]
-		plan[App Service Plan]
-	end
+    subgraph Azure
+        swa[Azure Static Web App]
+        appsvc[Azure App Service API]
+        rg[Resource Group]
+        plan[App Service Plan]
+    end
 
-	user[User Browser]
+    user[User Browser]
 
-	%% Dev to GitHub
-	frontend --> repo
-	backend --> repo
+    %% Dev to GitHub
+    frontend --> repo
+    backend --> repo
 
-	%% GitHub Actions
-	repo --> gha_front
-	repo --> gha_back
+    %% GitHub Actions
+    repo --> gha_front
+    repo --> gha_back
 
-	%% Deployments
-	gha_front --> swa
-	gha_back --> appsvc
+    %% Deployments
+    gha_front --> swa
+    gha_back --> appsvc
 
-	%% Azure infra
-	swa -. part of .-> rg
-	appsvc -. part of .-> rg
-	appsvc -. uses .-> plan
+    %% Azure infra
+    swa -. part of .-> rg
+    appsvc -. part of .-> rg
+    appsvc -. uses .-> plan
 
-	%% User flow
-	user -- HTTPS GET/POST --> swa
-	swa -- API Proxy /api/* --> appsvc
+    %% User flow
+    user -- HTTPS GET/POST --> swa
+    swa -- API Proxy /api/* --> appsvc
 
-	%% Notes
-	note1[Frontend build output deployed to SWA]
-	note2[Backend Node API deployed to App Service]
-	note3[Static Web App proxies API calls to App Service]
+    %% Notes
+    note1[Frontend build output deployed to SWA]
+    note2[Backend Node API deployed to App Service]
+    note3[Static Web App proxies API calls to App Service]
 
-	swa -.-> note1
-	appsvc -.-> note2
-	swa -.-> note3
+    swa -.-> note1
+    appsvc -.-> note2
+    swa -.-> note3
 ```
-# System Architecture
-
-```mermaid
-flowchart TD
-	subgraph Dev
-		frontend[React TypeScript App]
-		backend[Express API Server]
-	end
-
-	subgraph GitHub
-		repo[GitHub Repository]
-		gha_front[GitHub Actions Frontend Workflow]
-		gha_back[GitHub Actions Backend Workflow]
-	end
-
-	subgraph Azure
-		swa[Azure Static Web App]
-		appsvc[Azure App Service API]
-		rg[Resource Group]
-		plan[App Service Plan]
-	end
-
-	user[User Browser]
-
-	%% Dev to GitHub
-	frontend --> repo
-	backend --> repo
-
-	%% GitHub Actions
-	repo --> gha_front
-	repo --> gha_back
-
-	%% Deployments
-	gha_front --> swa
-	gha_back --> appsvc
-
-	%% Azure infra
-	swa -. part of .-> rg
-	appsvc -. part of .-> rg
-	appsvc -. uses .-> plan
-
-	%% User flow
-	user -- HTTPS GET/POST --> swa
-	swa -- API Proxy /api/* --> appsvc
-
-	%% Notes
-	note1[Frontend build output deployed to SWA]
-	note2[Backend Node API deployed to App Service]
-	note3[Static Web App proxies API calls to App Service]
-
-	swa -.-> note1
-	appsvc -.-> note2
-	swa -.-> note3
-```
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
-
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
-
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
-
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
-
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
